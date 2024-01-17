@@ -51,7 +51,7 @@ class FullGrad(BaseCAM):
         grads_list = [g.cpu().data.numpy() for g in
                       self.activations_and_grads.gradients]
         cam_per_target_layer = []
-        target_size = self.get_target_width_height(input_tensor)
+        target_size = self.get_target_dimensions(input_tensor)
 
         gradient_multiplied_input = input_grad * input_tensor.data.cpu().numpy()
         gradient_multiplied_input = np.abs(gradient_multiplied_input)

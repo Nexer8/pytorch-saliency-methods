@@ -21,9 +21,10 @@ class XGradCAM(BaseCAM):
                         target_category,
                         activations,
                         grads):
-        sum_activations = np.sum(activations, axis=(2, 3))
+        sum_activations = np.sum(
+            activations, axis=(*list(range(2, len(activations.shape))),))
         eps = 1e-7
         weights = grads * activations / \
             (sum_activations[:, :, None, None] + eps)
-        weights = weights.sum(axis=(2, 3))
+        weights = weights.sum(axis=(*list(range(2, len(activations.shape))),))
         return weights

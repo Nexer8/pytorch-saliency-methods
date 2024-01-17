@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from torchvision.transforms import Compose, Normalize, ToTensor
 from typing import List, Dict
+from scipy.ndimage import zoom
 import math
 
 
@@ -158,12 +159,18 @@ def show_factorization_on_image(img: np.ndarray,
 
 
 def scale_cam_image(cam, target_size=None):
+    if cam.ndim > 2 and target_size is None:
+        return cam
+
+    if len(target_size) > 2:
+        return zoom(cam, tuple(target_size[i] / cam.shape[i] for i in range(cam.ndim)))
+
     result = []
     for img in cam:
         img = img - np.min(img)
         img = img / (1e-7 + np.max(img))
         if target_size is not None:
-            img = cv2.resize(img, target_size)
+            img = cv2.resize(img, (target_size[1], target_size[0]))
         result.append(img)
     result = np.float32(result)
 

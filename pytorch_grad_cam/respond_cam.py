@@ -18,6 +18,4 @@ class RespondCAM(BaseCAM):
                         target_category,
                         activations,
                         grads):
-        return np.sum(activations * grads, axis=(2, 3)) / np.sum(activations + 1e-10, axis=(2, 3))
-        # in case of a 3D tensor, the return statement would be:
-        # return np.sum(activations * grads, axis=(2, 3, 4)) / np.sum(activations + 1e-10, axis=(2, 3, 4))
+        return np.sum(activations * grads, axis=(*list(range(2, len(activations.shape))),)) / np.sum(activations + 1e-10, axis=(*list(range(2, len(activations.shape))),))

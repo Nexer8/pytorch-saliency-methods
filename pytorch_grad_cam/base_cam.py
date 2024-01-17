@@ -24,15 +24,15 @@ class BaseCAM:
         self.reshape_transform = reshape_transform
         self.compute_input_gradient = compute_input_gradient
         self.uses_gradients = uses_gradients
-        if tta_transforms is None:
-            self.tta_transforms = tta.Compose(
-                [
-                    tta.HorizontalFlip(),
-                    tta.Multiply(factors=[0.9, 1, 1.1]),
-                ]
-            )
-        else:
-            self.tta_transforms = tta_transforms
+        # if tta_transforms is None:
+        #     self.tta_transforms = tta.Compose(
+        #         [
+        #             tta.HorizontalFlip(),
+        #             tta.Multiply(factors=[0.9, 1, 1.1]),
+        #         ]
+        #     )
+        # else:
+        self.tta_transforms = tta_transforms
 
         self.activations_and_grads = ActivationsAndGradients(
             self.model, target_layers, reshape_transform)
@@ -62,7 +62,14 @@ class BaseCAM:
                                        targets,
                                        activations,
                                        grads)
-        weighted_activations = weights[:, :, None, None] * activations
+        if len(activations.shape) == 4:
+            weighted_activations = weights[:, :, None, None] * activations
+        elif len(activations.shape) == 5:
+            weighted_activations = weights[:, :,
+                                           None, None, None] * activations
+        else:
+            raise Exception("Not Implemented")
+
         if eigen_smooth:
             cam = get_2d_projection(weighted_activations)
         else:
@@ -107,10 +114,10 @@ class BaseCAM:
                                                    eigen_smooth)
         return self.aggregate_multi_layers(cam_per_layer)
 
-    def get_target_width_height(self,
-                                input_tensor: torch.Tensor) -> Tuple[int, int]:
-        width, height = input_tensor.size(-1), input_tensor.size(-2)
-        return width, height
+    def get_target_dimensions(self,
+                              input_tensor: torch.Tensor) -> np.ndarray:
+        # return everything except the batch and the channel dimensions
+        return np.asarray(input_tensor.cpu().numpy().shape[1:])
 
     def compute_cam_per_layer(
             self,
@@ -121,7 +128,7 @@ class BaseCAM:
                             for a in self.activations_and_grads.activations]
         grads_list = [g.cpu().data.numpy()
                       for g in self.activations_and_grads.gradients]
-        target_size = self.get_target_width_height(input_tensor)
+        target_size = self.get_target_dimensions(input_tensor)
 
         cam_per_target_layer = []
         # Loop over the saliency image from every layer
